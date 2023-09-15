@@ -11,7 +11,7 @@ More implementations to come.
 ## Install
 
 ```bash
-$ pip install long_range_models
+$ pip install long-range-models
 ```
 
 ## Usage
