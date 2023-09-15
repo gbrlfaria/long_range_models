@@ -1,6 +1,6 @@
 # Long Range Models
 
-[![PyPI version](https://badge.fury.io/py/long_range_models.svg)](https://badge.fury.io/py/long_range_models)
+[![PyPI version](https://badge.fury.io/py/long-range-models.svg)](https://badge.fury.io/py/long-range-models)
 [![Static Badge](https://img.shields.io/badge/powered%20by-Flax-blue)](https://github.com/google/flax)
 [![Static Badge](https://img.shields.io/badge/license-MIT-yellow)](/LICENSE)
 
