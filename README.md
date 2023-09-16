@@ -25,8 +25,8 @@ Check out the examples below.
 Consider a language model built with an LRU sequence layer and the architecture proposed in the S4 paper:
 
 ```py
-from functools import partial
 import jax.random as jrandom
+from functools import partial
 from long_range_models import SequenceModel, S4Module, LRULayer
 
 rng = jrandom.PRNGKey(0)
@@ -52,8 +52,8 @@ model.apply(variables, x)  # (1, 1024, 1000)
 For sequences with continuous values, the setup looks as follows:
 
 ```py
-from functools import partial
 import jax.random as jrandom
+from functools import partial
 from long_range_models import ContinuousSequenceModel, S4Module, LRULayer
 
 rng = jrandom.PRNGKey(0)
@@ -78,6 +78,6 @@ model.apply(variables, x)  # (1, 1024, 10)
 
 ## Upcoming features
 
-- **More implementations:** Extend the library with models like S4D, S4Liquid, BiGS, Hyena, RetNet, SGConv, H3, and others.
-- **Customization:** Allow users to better customize currently implemented layers and architectures (e.g., activation functions, initialization, etc.).
-- **Sequential API:** Allow recurrent models to run sequentially, allowing for efficient inference.
+- **More implementations:** extend the library with models like S4D, S4Liquid, BiGS, Hyena, RetNet, SGConv, H3, and others.
+- **Customization:** allow users to better customize currently implemented layers and architectures (e.g., activation functions, initialization, etc.).
+- **Sequential API:** allow recurrent models to run sequentially, allowing for efficient inference.
