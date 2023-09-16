@@ -39,22 +39,24 @@ def get_datasets(num_epochs: int, batch_size: int):
     train_ds = train_ds.map(transform_fn)
     test_ds = test_ds.map(transform_fn)
 
-    train_ds = train_ds.repeat(num_epochs).shuffle(1024)
+    train_ds = train_ds.repeat(num_epochs).shuffle(1024, seed=0)
     train_ds = train_ds.batch(batch_size, drop_remainder=True).prefetch(1)
-    test_ds = test_ds.shuffle(1024)
+    test_ds = test_ds.shuffle(1024, seed=0)
     test_ds = test_ds.batch(batch_size, drop_remainder=True).prefetch(1)
 
     return train_ds, test_ds
 
 
-# Initialize seed
+# Random keys
 rng_init = jrandom.PRNGKey(1919)
+params_key, dropout_key = jrandom.split(rng_init, 2)
 
 model = ContinuousSequenceModel(
     module=S4Module(
         sequence_layer=partial(S5Layer, state_dim=256, num_blocks=8, conj_sym=True),
         dim=128,
         depth=6,
+        norm="layer",
     ),
     out_dim=10,
     pool=True,
@@ -62,7 +64,9 @@ model = ContinuousSequenceModel(
 
 # Initialize parameters
 dummy_batch = jnp.ones((1, 32 * 32, 3))
-params = model.init(rng_init, dummy_batch)
+params = model.init(params_key, dummy_batch, train=False)
+
+print(model.tabulate(rng_init, dummy_batch, train=False)) # TODO DELETE
 
 # Initialize optimizer
 tx = optax.adamw(learning_rate=1e-3, weight_decay=0.05)
@@ -85,8 +89,15 @@ def loss_fn(output: Array, target: Array) -> Array:
 def train_step(state: TrainState, batch: Tuple[Array, Array]) -> TrainState:
     inputs, targets = batch
 
+    dropout_train_key = jax.random.fold_in(key=dropout_key, data=state.step)
+
     def apply_loss(params: Dict) -> Array:
-        outputs = state.apply_fn(params, inputs)
+        outputs = state.apply_fn(
+            params,
+            inputs,
+            train=True,
+            rngs={"dropout": dropout_train_key},
+        )
         return loss_fn(outputs, targets)
 
     grad_fn = jax.grad(apply_loss)
@@ -102,7 +113,7 @@ def compute_metrics(
     batch: Tuple[Array, Array],
 ) -> TrainState:
     inputs, targets = batch
-    outputs = state.apply_fn(state.params, inputs)
+    outputs = state.apply_fn(state.params, inputs, train=False)
     loss = loss_fn(outputs, targets)
     metric_updates = state.metrics.single_from_model_output(
         logits=outputs, labels=targets, loss=loss

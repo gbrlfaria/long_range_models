@@ -12,3 +12,4 @@ DType = Any
 Initializer = Callable[[PRNGKey, Shape, DType], Array]
 
 SequenceLayer = Callable[[int], Callable[[Array], Array]]
+Activation = Callable[[Array], Array]

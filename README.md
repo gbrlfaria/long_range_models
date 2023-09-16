@@ -18,23 +18,23 @@ $ pip install long-range-models
 
 This library offers detailed documentation for every module and layer implemented.
 Models are created by composing different pieces together.
-Check out the examples below.
+Check out some minimal examples below.
 
 ### Discrete sequence data
 
-Consider a language model built with an LRU sequence layer and the architecture proposed in the S4 paper:
+Consider a language model built with an S5 sequence layer and the architecture proposed in the S4 paper:
 
 ```py
 import jax.random as jrandom
 from functools import partial
-from long_range_models import SequenceModel, S4Module, LRULayer
+from long_range_models import SequenceModel, S4Module, S5Layer
 
 rng = jrandom.PRNGKey(0)
 
 model = SequenceModel(
   num_tokens=1000,
   module=S4Module(
-    sequence_layer=partial(LRULayer, state_dim=256),
+    sequence_layer=partial(S5Layer, state_dim=256),
     dim=128,
     depth=6,
   ),
@@ -42,8 +42,8 @@ model = SequenceModel(
 
 x = jrandom.randint(rng, (1, 1024), 0, 1000)
 
-variables = model.init(rng, x)
-model.apply(variables, x)  # (1, 1024, 1000)
+variables = model.init(rng, x, train=False)
+model.apply(variables, x, train=False)  # (1, 1024, 1000)
 
 ```
 
@@ -54,14 +54,14 @@ For sequences with continuous values, the setup looks as follows:
 ```py
 import jax.random as jrandom
 from functools import partial
-from long_range_models import ContinuousSequenceModel, S4Module, LRULayer
+from long_range_models import ContinuousSequenceModel, S4Module, S5Layer
 
 rng = jrandom.PRNGKey(0)
 
 model = ContinuousSequenceModel(
   out_dim=10,
   module=S4Module(
-    sequence_layer=partial(LRULayer, state_dim=256),
+    sequence_layer=partial(S5Layer, state_dim=256),
     dim=128,
     depth=6,
   ),
@@ -69,12 +69,12 @@ model = ContinuousSequenceModel(
 
 x = jrandom.normal(rng, (1, 1024, 32))
 
-variables = model.init(rng, x)
-model.apply(variables, x)  # (1, 1024, 10)
+variables = model.init(rng, x, train=False)
+model.apply(variables, x, train=False)  # (1, 1024, 10)
 
 ```
 
-**Note:** both model types offer several customization options. Make sure to check out [their documentation](/long_range_models/sequence_models.py).
+**Note:** both model types offer several customization options. Make sure to check out [their documentation](/long_range_models/sequence_models.py). Also check out full examples [here](/examples/).
 
 ## Upcoming features
 
