@@ -27,7 +27,8 @@ class S4Module(nn.Module):
             `ops` module for options. If `None`, no gating mechanism is used.
         bidirectional: \
             Whether the sequence layer should be applied in both directions. \
-            If `True`, a bidirectional mechanism is used and there will be concat.
+            If `True`, separate instances of the sequence layer will be applied for \
+            each direction and their outputs will be concatenated in the feature axis.
         bidirectional_proj: \
             Whether to project the bidirectional sequence layer's outputs to have a \
             feature dimension of `dim`. When `False` and `bidirectional` is `True`, \
