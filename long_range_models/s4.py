@@ -28,6 +28,11 @@ class S4Module(nn.Module):
         bidirectional: \
             Whether the sequence layer should be applied in both directions. \
             If `True`, a bidirectional mechanism is used and there will be concat.
+        bidirectional_proj: \
+            Whether to project the bidirectional sequence layer's outputs to have a \
+            feature dimension of `dim`. When `False` and `bidirectional` is `True`, \
+            outputs maintain `2 * dim` dimension. No effect when `bidirectional` \
+            is `False`.
         skip: \
             Whether skip/residual connections should be used in each \
             block/layer.
@@ -51,6 +56,7 @@ class S4Module(nn.Module):
     activation: Optional[Activation] = nn.gelu
     gate: Optional[Callable[[int, Activation], Callable[[Array], Array]]] = HalfGLU1
     bidirectional: bool = False
+    bidirectional_proj: bool = True
     skip: bool = True
     norm: Optional[str] = "batch"
     prenorm: bool = True
@@ -81,6 +87,7 @@ class S4Module(nn.Module):
                 self.activation,
                 self.gate,
                 self.bidirectional,
+                self.bidirectional_proj,
                 self.skip,
                 self.norm,
                 self.prenorm,
@@ -98,6 +105,7 @@ class S4Block(nn.Module):
     activation: Optional[Activation]
     gate: Optional[Callable[[int, Activation], Callable[[Array], Array]]]
     bidirectional: bool
+    bidirectional_proj: bool
     skip: bool
     norm: Optional[str]
     prenorm: bool
@@ -110,15 +118,18 @@ class S4Block(nn.Module):
         if not self.bidirectional:
             sequence_layer = self.sequence_layer(self.dim)
         else:
-            sequence_layer = nn.Sequential(
-                [
-                    Bidirectional(
-                        forward_module=self.sequence_layer(self.dim),
-                        backward_module=self.sequence_layer(self.dim),
-                    ),
-                    nn.Dense(self.dim),
-                ]
+            # Ensure the output has feature dimension `dim`
+            if self.bidirectional_proj:
+                bi_project = nn.Dense(self.dim)
+            else:
+                bi_project = lambda x: x
+
+            bi_sequence_layer = Bidirectional(
+                forward_module=self.sequence_layer(self.dim),
+                backward_module=self.sequence_layer(self.dim),
             )
+
+            sequence_layer = nn.Sequential([bi_sequence_layer, bi_project])
 
         # Initialize normalization layer
         if self.norm == "batch":
