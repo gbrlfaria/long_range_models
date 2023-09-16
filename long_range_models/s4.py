@@ -79,7 +79,6 @@ class S4Module(nn.Module):
             The output data with shape `(batch_size, input_length, dim)`.
         """
 
-        # Forward pass
         x = inputs
         for _ in range(self.depth):
             x = S4Block(
