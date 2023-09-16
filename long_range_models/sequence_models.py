@@ -27,7 +27,7 @@ class SequenceModel(nn.Module):
             The dimension of the output of the model. Defaults to `num_tokens` if \
             not specified.
         pool: \
-            If `True`, applies mean pooling over the sequence dimension before the \
+            Whether to apply mean pooling over the sequence dimension before the \
             output layer.
     """
 
@@ -89,7 +89,7 @@ class ContinuousSequenceModel(nn.Module):
             The embedding/feature dimension. Defaults to the `dim` attribute \
             of the inner module if not specified.
         pool: \
-            If `True`, applies mean pooling over the sequence dimension before the \
+            Whether to apply mean pooling over the sequence dimension before the \
             output layer.
     """
 

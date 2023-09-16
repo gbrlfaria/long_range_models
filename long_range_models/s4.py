@@ -26,22 +26,22 @@ class S4Module(nn.Module):
             The gating function applied together with the activation. Check out the \
             `ops` module for options. If `None`, no gating mechanism is used.
         bidirectional: \
-            Indicates whether the sequence layer should be applied in both directions. \
+            Whether the sequence layer should be applied in both directions. \
             If `True`, a bidirectional mechanism is used and there will be concat.
         skip: \
-            Indicates whether skip/residual connections should be used in each \
+            Whether skip/residual connections should be used in each \
             block/layer.
         norm: \
             The type of normalization to be applied. Options include `"batch"` for \
             batch normalization, `"layer"` for layer normalization, and `None` \
             for no normalization.
         prenorm: \
-            Indicates whether normalization should be applied before the sequence \
+            Whether normalization should be applied before the sequence \
             layer. If `False`, normalization is applied after the skip connection.
         dropout: \
             The dropout probability.
         tie_dropout: \
-            Indicates whether the dropout mask should be shared across the length of \
+            Whether the dropout mask should be shared across the length of \
             the sequence.
     """
 
@@ -64,6 +64,9 @@ class S4Module(nn.Module):
         Args:
             inputs: \
                 The input data with shape `(batch_size, input_length, dim)`.
+            train: \
+                Whether the model is being trained. It is used for correctly \
+                configuring the dropout and normalization layers.
 
         Returns:
             The output data with shape `(batch_size, input_length, dim)`.
