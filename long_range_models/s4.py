@@ -113,7 +113,7 @@ class S4Block(nn.Module):
                         forward_module=self.sequence_layer(self.dim),
                         backward_module=self.sequence_layer(self.dim),
                     ),
-                    nn.Dense(2 * self.dim, self.dim),
+                    nn.Dense(self.dim),
                 ]
             )
 
