@@ -17,8 +17,8 @@ $ pip install long-range-models
 ## Usage
 
 This library offers detailed documentation for every module and layer implemented.
-Models are created by composing different pieces together.
-Check out some minimal examples below.
+Models are created by integrating different components.
+See some minimal examples below.
 
 ### Discrete sequence data
 
