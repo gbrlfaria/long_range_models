@@ -20,11 +20,29 @@ class S4Module(nn.Module):
         sequence_layer: \
             The type of sequence layer used within the model.
         activation: \
-            pass
+            The activation function applied after the sequence layer. If `None`, no \
+            activation is applied.
         gate: \
-            pass
+            The gating function applied together with the activation. Check out the \
+            `ops` module for options. If `None`, no gating mechanism is used.
         bidirectional: \
-            pass
+            Indicates whether the sequence layer should be applied in both directions. \
+            If `True`, a bidirectional mechanism is used and there will be concat.
+        skip: \
+            Indicates whether skip/residual connections should be used in each \
+            block/layer.
+        norm: \
+            The type of normalization to be applied. Options include `"batch"` for \
+            batch normalization, `"layer"` for layer normalization, and `None` \
+            for no normalization.
+        prenorm: \
+            Indicates whether normalization should be applied before the sequence \
+            layer. If `False`, normalization is applied after the skip connection.
+        dropout: \
+            The dropout probability.
+        tie_dropout: \
+            Indicates whether the dropout mask should be shared across the length of \
+            the sequence.
     """
 
     dim: int
@@ -51,6 +69,40 @@ class S4Module(nn.Module):
             The output data with shape `(batch_size, input_length, dim)`.
         """
 
+        # Forward pass
+        x = inputs
+        for _ in range(self.depth):
+            x = S4Block(
+                self.dim,
+                self.sequence_layer,
+                self.activation,
+                self.gate,
+                self.bidirectional,
+                self.skip,
+                self.norm,
+                self.prenorm,
+                self.dropout,
+                self.tie_dropout,
+            )(x, train)
+        return x
+
+
+class S4Block(nn.Module):
+    """A block of the stacked architecture proposed in the S4 paper."""
+
+    dim: int
+    sequence_layer: SequenceLayer
+    activation: Optional[Activation]
+    gate: Optional[Callable[[int, Activation], Callable[[Array], Array]]]
+    bidirectional: bool
+    skip: bool
+    norm: Optional[str]
+    prenorm: bool
+    dropout: float
+    tie_dropout: bool
+
+    @nn.compact
+    def __call__(self, x: Array, train: bool) -> Array:
         # Initialize sequence layer
         if not self.bidirectional:
             sequence_layer = self.sequence_layer(self.dim)
@@ -89,29 +141,27 @@ class S4Module(nn.Module):
             activation = lambda x: drop(x)
 
         # Forward pass
-        x = inputs
-        for _ in range(self.depth):
-            skip = x
+        skip = x
 
-            # Pre-normalization if enabled
-            if self.prenorm:
-                x = norm(x)
+        # Pre-normalization if enabled
+        if self.prenorm:
+            x = norm(x)
 
-            # Apply sequence layer
-            x = sequence_layer(x)
+        # Apply sequence layer
+        x = sequence_layer(x)
 
-            # Post layer operation (activation or gate)
-            if self.gate is not None:
-                x = drop(self.gate(self.dim, activation)(x))
-            else:
-                x = activation(x)
+        # Post layer operation (activation or gate)
+        if self.gate is not None:
+            x = drop(self.gate(self.dim, activation)(x))
+        else:
+            x = activation(x)
 
-            # Residual connection
-            if self.skip:
-                x = x + skip
+        # Residual connection
+        if self.skip:
+            x = x + skip
 
-            # Post-normalization if not pre-normalized
-            if not self.prenorm:
-                x = norm(x)
+        # Post-normalization if not pre-normalized
+        if not self.prenorm:
+            x = norm(x)
 
         return x

@@ -66,8 +66,6 @@ model = ContinuousSequenceModel(
 dummy_batch = jnp.ones((1, 32 * 32, 3))
 params = model.init(params_key, dummy_batch, train=False)
 
-print(model.tabulate(rng_init, dummy_batch, train=False)) # TODO DELETE
-
 # Initialize optimizer
 tx = optax.adamw(learning_rate=1e-3, weight_decay=0.05)
 
