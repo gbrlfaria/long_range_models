@@ -5,7 +5,7 @@ import jax
 import jax.numpy as jnp
 import jax.random as jrandom
 
-from .types import Array
+from .types import Array, Initializer
 
 
 class LRULayer(nn.Module):
@@ -24,6 +24,12 @@ class LRULayer(nn.Module):
             eigenvalues in the complex plane.
         max_phase: \
             The maximum phase value for eigenvalue initialization.
+        B_init: \
+            The input matrix initialization function.
+        C_init: \
+            The output matrix initialization function.
+        D_init: \
+            The feedthrough matrix initialization function.
 
     Parameters:
         nu_log: \
@@ -49,6 +55,9 @@ class LRULayer(nn.Module):
     r_min: float = 0.0
     r_max: float = 1.0
     max_phase: float = 6.28
+    B_init: Initializer = nn.initializers.variance_scaling(0.5, "fan_out", "normal")
+    C_init: Initializer = nn.initializers.variance_scaling(1.0, "fan_out", "normal")
+    D_init: Initializer = nn.initializers.normal(stddev=1.0)
 
     def setup(self):
         # Variable aliasing (for convenience)
@@ -70,9 +79,9 @@ class LRULayer(nn.Module):
             theta = max_phase * u2
             return jnp.log(theta)
 
-        B_init = nn.initializers.variance_scaling(0.5, "fan_out", "normal")
-        C_init = nn.initializers.variance_scaling(1.0, "fan_out", "normal")
-        D_init = nn.initializers.normal(stddev=1.0)
+        B_init = self.B_init
+        C_init = self.C_init
+        D_init = self.D_init
 
         # Parameters
         self.nu_log = self.param("nu_log", nu_log_init, (state_dim,))
