@@ -6,7 +6,7 @@ import jax.numpy as jnp
 import jax.scipy as jsp
 
 from .ssm import discretize_zoh, make_dplr_hippo
-from .types import Array
+from .types import Array, Initializer
 
 
 class S5Layer(nn.Module):
@@ -17,15 +17,23 @@ class S5Layer(nn.Module):
             The dimension of the input and the output features.
         state_dim: \
             The dimension of the state.
-        dt_min: \
-            Minimum value for initializing the timescale parameter.
-        dt_max: \
-            Maximum value for initializing the timescale parameter.
         num_blocks: \
             The number of blocks for the block-diagonal initialization of the \
             state matrix. If set to `1`, regular initialization is used.
         conj_sym: \
             Whether to enforce conjugate symmetry for the state representation.
+        dt_min: \
+            Minimum value for initializing the timescale parameter.
+        dt_max: \
+            Maximum value for initializing the timescale parameter.
+        B_init: \
+            The input matrix initialization function (before the multiplication by \
+            the diagonalization eigenvectors).
+        C_init: \
+            The output matrix initialization function (before the multiplication by \
+            the diagonalization eigenvectors).
+        D_init: \
+            The feedthrough matrix initialization function.
         clip_eigs: \
             Whether to clip state matrix eigenvalues to ensure they remain negative.
         eps: \
@@ -48,10 +56,13 @@ class S5Layer(nn.Module):
 
     feature_dim: int
     state_dim: int
-    dt_min: float = 0.001
-    dt_max: float = 0.1
     num_blocks: int = 1
     conj_sym: bool = False
+    dt_min: float = 0.001
+    dt_max: float = 0.1
+    B_init: Initializer = nn.initializers.lecun_normal()
+    C_init: Initializer = nn.initializers.lecun_normal()
+    D_init: Initializer = nn.initializers.normal(stddev=1.0)
     clip_eigs: bool = False
     eps: float = 1e-4
 
@@ -60,10 +71,10 @@ class S5Layer(nn.Module):
         input_dim = self.feature_dim
         output_dim = self.feature_dim
         state_dim = self.state_dim
-        dt_min = self.dt_min
-        dt_max = self.dt_max
         num_blocks = self.num_blocks
         conj_sym = self.conj_sym
+        dt_min = self.dt_min
+        dt_max = self.dt_max
 
         # Enforce conjugate symmetry
         if conj_sym:
@@ -100,14 +111,14 @@ class S5Layer(nn.Module):
 
         # Parameter initializers
         def B_comps_init(key, shape):
-            B = nn.initializers.lecun_normal()(key, shape)
+            B = self.B_init(key, shape)
             B = V.conj().T @ B
             # Split complex parameters into real components. This is required
             # due to JAX limitations in computing gradients of complex variables
             return jnp.stack((B.real, B.imag))
 
         def C_comps_init(key, shape):
-            C = nn.initializers.lecun_normal()(key, shape)
+            C = self.C_init(key, shape)
             C = C @ V
             # Split complex parameters into real components. This is required
             # due to JAX limitations in computing gradients of complex variables
@@ -118,7 +129,7 @@ class S5Layer(nn.Module):
             log_dt = (jnp.log(dt_max) - jnp.log(dt_min)) * u + jnp.log(dt_min)
             return log_dt
 
-        D_init = nn.initializers.normal(stddev=1.0)
+        D_init = self.D_init
 
         # Parameters
         self.Lambda_re = self.param("Lambda_re", lambda *_: Lambda.real)
