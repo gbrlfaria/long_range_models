@@ -7,6 +7,24 @@ from .types import Array, SequenceLayer
 
 
 def bidirectional(layer: SequenceLayer, project_outputs: bool = False) -> SequenceLayer:
+    """Creates a bidirectional sequence layer from a unidirectional sequence layer.
+
+    The layer works by running one instance of the sequence layer in each direction \
+    and then concatenating their outputs in the feature axis, doubling the feature \
+    dimension. Optionally, the concatenated outputs can be linearly projected to match \
+    the feature dimension of the inputs.
+
+    Args:
+        layer: \
+            The unidirectional sequence layer.
+        project_outputs: \
+            Whether to project the outputs of the bidirectional layer to match the \
+            feature dimension of the inputs.
+
+    Returns:
+        The corresponding bidirectional sequence layer.
+    """
+
     class Bidirectional(nn.Module):
         dim: int
 
@@ -28,6 +46,8 @@ def bidirectional(layer: SequenceLayer, project_outputs: bool = False) -> Sequen
 
 
 def activation(name: str) -> Callable[[Array], Array]:
+    """Returns the desired activation function based on the given name."""
+
     if name == "id":
         return lambda x: x
     if name == "relu":
@@ -61,11 +81,15 @@ def activation(name: str) -> Callable[[Array], Array]:
 
 
 def dense_activation(dim: int, activation_name: str) -> Callable[[Array], Array]:
+    """
+    Returns a composed function of a dense layer followed by the desired activation.
+    """
+
     # Create dense layer
     if activation_name == "glu":
         dense = nn.Dense(dim * 2)
     elif activation_name == "half_glu":
-        # Only linear on the gating side of GLU
+        # In the half GLU, only the gate input goes through the feedforward layer
         half_dense = nn.Dense(dim)
         dense = lambda x: jnp.concatenate([x, half_dense(x)], axis=-1)
     else:

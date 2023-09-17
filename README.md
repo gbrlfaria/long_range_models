@@ -5,7 +5,7 @@
 [![Static Badge](https://img.shields.io/badge/license-MIT-yellow)](/LICENSE)
 
 
-A collection of simple implementations of long-range sequence models, including [LRU](/long_range_models/lru.py), [S5](/long_range_models/s5.py), and [S4](/long_range_models/s4.py).
+A collection of simple implementations of long-range sequence models and layers, including [LRU](/long_range_models/lru.py), [S5](/long_range_models/s5.py), and [S4](/long_range_models/s4.py).
 More implementations to come.
 
 ## Install
@@ -17,7 +17,7 @@ $ pip install long-range-models
 ## Usage
 
 This library offers detailed documentation for every module and layer implemented.
-Models are created by integrating different components.
+Models are created by integrating different components (layers, backbones, and sequence model wrappers).
 See some minimal examples below.
 
 ### Discrete sequence data
