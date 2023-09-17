@@ -90,8 +90,8 @@ def dense_activation(dim: int, activation_name: str) -> Callable[[Array], Array]
         dense = nn.Dense(dim * 2)
     elif activation_name == "half_glu":
         # In the half GLU, only the gate input goes through the feedforward layer
-        half_dense = nn.Dense(dim)
-        dense = lambda x: jnp.concatenate([x, half_dense(x)], axis=-1)
+        gate_dense = nn.Dense(dim)
+        dense = lambda x: jnp.concatenate([x, gate_dense(x)], axis=-1)
     else:
         dense = nn.Dense(dim)
 

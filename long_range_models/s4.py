@@ -27,20 +27,18 @@ class S4Backbone(nn.Module):
             follows the sequence layer. If `None` no activation nor feedforward layer \
             is used. Refer to the `ops` module for available options.
         skip: \
-            Whether skip/residual connections should be used in each \
-            block/layer.
+            Whether skip/residual connections should be used in each block/layer.
         norm: \
             The type of normalization to be applied. Options include `"batch"` for \
             batch normalization, `"layer"` for layer normalization, and `None` \
             for no normalization.
         prenorm: \
-            Whether normalization should be applied before the sequence \
-            layer. If `False`, normalization is applied after the skip connection.
+            Whether normalization should be applied before the sequence layer. \
+            If `False`, normalization is applied after the skip connection.
         dropout: \
             The dropout probability.
         tie_dropout: \
-            Whether the dropout mask should be shared across the length of \
-            the sequence.
+            Whether the dropout mask should be shared across the length of the sequence.
     """
 
     dim: int
