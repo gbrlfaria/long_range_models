@@ -22,19 +22,19 @@ See some minimal examples below.
 
 ### Discrete sequence data
 
-Consider a language model built with an S5 sequence layer and the architecture proposed in the S4 paper:
+Consider a language model built with an LRU sequence layer and a S4 backbone:
 
 ```py
 import jax.random as jrandom
 from functools import partial
-from long_range_models import SequenceModel, S4Module, S5Layer
+from long_range_models import SequenceModel, S4Backbone, LRULayer
 
 rng = jrandom.PRNGKey(0)
 
 model = SequenceModel(
   num_tokens=1000,
-  module=S4Module(
-    sequence_layer=partial(S5Layer, state_dim=256),
+  module=S4Backbone(
+    sequence_layer=partial(LRULayer, state_dim=256),
     dim=128,
     depth=6,
   ),
@@ -54,14 +54,14 @@ For sequences with continuous values, the setup looks as follows:
 ```py
 import jax.random as jrandom
 from functools import partial
-from long_range_models import ContinuousSequenceModel, S4Module, S5Layer
+from long_range_models import ContinuousSequenceModel, S4Backbone, LRULayer
 
 rng = jrandom.PRNGKey(0)
 
 model = ContinuousSequenceModel(
   out_dim=10,
-  module=S4Module(
-    sequence_layer=partial(S5Layer, state_dim=256),
+  module=S4Backbone(
+    sequence_layer=partial(LRULayer, state_dim=256),
     dim=128,
     depth=6,
   ),
@@ -74,7 +74,19 @@ model.apply(variables, x, train=False)  # (1, 1024, 10)
 
 ```
 
-**Note:** both model types offer several customization options. Make sure to check out [their documentation](/long_range_models/sequence_models.py). Also check out full examples [here](/examples/).
+Both model types offer several customization options.
+Make sure to check out [their documentation](/long_range_models/sequence_models.py).
+Also check out full examples [here](/examples/).
+
+### Bidirectional sequence layers
+
+You can create bidirectional sequence layers by using the `bidirectional` wrapper function:
+
+```py
+from long_range_models import bidirectional
+
+sequence_layer = bidirectional(partial(LRULayer, state_dim=256))
+```
 
 ## Upcoming features
 

@@ -11,7 +11,7 @@ from clu import metrics
 from flax import struct
 from flax.training import train_state
 
-from long_range_models import ContinuousSequenceModel, LRULayer, S4Module, S5Layer
+from long_range_models import ContinuousSequenceModel, S4Backbone, S5Layer
 from long_range_models.types import Array
 
 
@@ -52,10 +52,11 @@ rng_init = jrandom.PRNGKey(1919)
 params_key, dropout_key = jrandom.split(rng_init, 2)
 
 model = ContinuousSequenceModel(
-    module=S4Module(
+    module=S4Backbone(
         sequence_layer=partial(S5Layer, state_dim=256, num_blocks=8, conj_sym=True),
         dim=128,
         depth=6,
+        ffn_act="half_glu",
         norm="layer",
     ),
     out_dim=10,

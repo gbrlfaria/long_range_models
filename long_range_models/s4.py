@@ -1,16 +1,15 @@
 """This module implements the models described in the paper [Efficiently Modeling Long Sequences with Structured State Spaces](https://arxiv.org/abs/2111.00396)"""
 
-from typing import Callable, Optional
+from typing import Optional
 
 import flax.linen as nn
 
-from .ops import Bidirectional, HalfGLU1
-from .types import Activation, Array, SequenceLayer
+from .ops import activation, dense_activation
+from .types import Array, SequenceLayer
 
 
-class S4Module(nn.Module):
-    """Implementation of the stacked architecture module proposed in the S4 paper. \
-    Default parameters are based on S5's interpretation of this architecture.
+class S4Backbone(nn.Module):
+    """Implementation of the sequence model backbone proposed in the S4 paper.
 
     Attributes:
         dim: \
@@ -19,21 +18,14 @@ class S4Module(nn.Module):
             The number of blocks/layers within the model.
         sequence_layer: \
             The type of sequence layer used within the model.
-        activation: \
-            The activation function applied after the sequence layer. If `None`, no \
-            activation is applied.
-        gate: \
-            The gating function applied together with the activation. Check out the \
-            `ops` module for options. If `None`, no gating mechanism is used.
-        bidirectional: \
-            Whether the sequence layer should be applied in both directions. \
-            If `True`, separate instances of the sequence layer will be applied for \
-            each direction and their outputs will be concatenated in the feature axis.
-        bidirectional_proj: \
-            Whether to project the bidirectional sequence layer's outputs to have a \
-            feature dimension of `dim`. When `False` and `bidirectional` is `True`, \
-            outputs maintain `2 * dim` dimension. No effect when `bidirectional` \
-            is `False`.
+        act: \
+            The activation function to be applied immediately after the sequence \
+            layer. If `None`, no activation is used. Refer to the `ops` module \
+            for available options.
+        ffn_act: \
+            The activation function to be applied after the feedforward layer that \
+            follows the sequence layer. If `None` no activation nor feedforward layer \
+            is used. Refer to the `ops` module for available options.
         skip: \
             Whether skip/residual connections should be used in each \
             block/layer.
@@ -54,10 +46,8 @@ class S4Module(nn.Module):
     dim: int
     depth: int
     sequence_layer: SequenceLayer
-    activation: Optional[Activation] = nn.gelu
-    gate: Optional[Callable[[int, Activation], Callable[[Array], Array]]] = HalfGLU1
-    bidirectional: bool = False
-    bidirectional_proj: bool = True
+    act: Optional[str] = "gelu"
+    ffn_act: Optional[str] = "glu"
     skip: bool = True
     norm: Optional[str] = "batch"
     prenorm: bool = True
@@ -66,7 +56,7 @@ class S4Module(nn.Module):
 
     @nn.compact
     def __call__(self, inputs: Array, train: bool) -> Array:
-        """Applies the forward pass of `S4Module` to the input data.
+        """Applies the `S4Backbone` module to the input data.
 
         Args:
             inputs: \
@@ -84,10 +74,8 @@ class S4Module(nn.Module):
             x = S4Block(
                 self.dim,
                 self.sequence_layer,
-                self.activation,
-                self.gate,
-                self.bidirectional,
-                self.bidirectional_proj,
+                self.act,
+                self.ffn_act,
                 self.skip,
                 self.norm,
                 self.prenorm,
@@ -98,14 +86,12 @@ class S4Module(nn.Module):
 
 
 class S4Block(nn.Module):
-    """A block of the stacked architecture proposed in the S4 paper."""
+    """A block of the `S4Backbone` module."""
 
     dim: int
     sequence_layer: SequenceLayer
-    activation: Optional[Activation]
-    gate: Optional[Callable[[int, Activation], Callable[[Array], Array]]]
-    bidirectional: bool
-    bidirectional_proj: bool
+    act: Optional[str]
+    ffn_act: Optional[str]
     skip: bool
     norm: Optional[str]
     prenorm: bool
@@ -115,21 +101,7 @@ class S4Block(nn.Module):
     @nn.compact
     def __call__(self, x: Array, train: bool) -> Array:
         # Initialize sequence layer
-        if not self.bidirectional:
-            sequence_layer = self.sequence_layer(self.dim)
-        else:
-            # Ensure the output has feature dimension `dim`
-            if self.bidirectional_proj:
-                bi_project = nn.Dense(self.dim)
-            else:
-                bi_project = lambda x: x
-
-            bi_sequence_layer = Bidirectional(
-                forward_module=self.sequence_layer(self.dim),
-                backward_module=self.sequence_layer(self.dim),
-            )
-
-            sequence_layer = nn.Sequential([bi_sequence_layer, bi_project])
+        sequence_layer = self.sequence_layer(self.dim)
 
         # Initialize normalization layer
         if self.norm == "batch":
@@ -139,7 +111,7 @@ class S4Block(nn.Module):
         elif self.norm is None:
             norm = lambda x: x
         else:
-            raise ValueError(f"Invalid normalization type `{self.norm}`")
+            raise ValueError(f"Unknown normalization type '{self.norm}'")
 
         # Initialize dropout layer
         drop = nn.Dropout(
@@ -149,10 +121,16 @@ class S4Block(nn.Module):
         )
 
         # Set activation function + dropout
-        if self.activation is not None:
-            activation = lambda x: drop(self.activation(x))
+        if self.act is not None:
+            act = lambda x: drop(activation(self.act)(x))
         else:
-            activation = lambda x: drop(x)
+            act = lambda x: drop(x)
+
+        # Set FFN + activation + dropout
+        if self.ffn_act is not None:
+            ffn_act = lambda x: drop(dense_activation(self.dim, self.ffn_act)(x))
+        else:
+            ffn_act = lambda x: x
 
         # Forward pass
         skip = x
@@ -161,14 +139,12 @@ class S4Block(nn.Module):
         if self.prenorm:
             x = norm(x)
 
-        # Apply sequence layer
+        # Apply sequence layer and activation function
         x = sequence_layer(x)
+        x = act(x)
 
-        # Post layer operation (activation or gate)
-        if self.gate is not None:
-            x = drop(self.gate(self.dim, activation)(x))
-        else:
-            x = activation(x)
+        # Post layer operation
+        x = ffn_act(x)
 
         # Residual connection
         if self.skip:
