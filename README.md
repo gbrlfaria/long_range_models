@@ -1,11 +1,10 @@
 # Long Range Models
 
 [![PyPI version](https://badge.fury.io/py/long-range-models.svg)](https://badge.fury.io/py/long-range-models)
-[![Static Badge](https://img.shields.io/badge/powered%20by-Flax-blue)](https://github.com/google/flax)
+[![Static Badge](https://img.shields.io/badge/written%20in-Flax-blue)](https://github.com/google/flax)
 [![Static Badge](https://img.shields.io/badge/license-MIT-yellow)](/LICENSE)
 
-
-A collection of simple implementations of long-range sequence models and layers, including [LRU](/long_range_models/lru.py), [S5](/long_range_models/s5.py), and [S4](/long_range_models/s4.py).
+A collection of simple implementations of long-range sequence models and layers, including [S4](/long_range_models/s4.py), [S5](/long_range_models/s5.py), and the [LRU](/long_range_models/lru.py).
 More implementations to come.
 
 ## Install
@@ -16,13 +15,13 @@ $ pip install long-range-models
 
 ## Usage
 
-This library offers detailed documentation for every module and layer implemented.
+This library offers detailed documentation for every module implemented.
 Models are created by integrating different components (layers, backbones, and sequence model wrappers).
 See some minimal examples below.
 
 ### Discrete sequence data
 
-Consider a language model built with an LRU sequence layer and a S4 backbone:
+Consider a language model built with an LRU sequence layer and an S4 backbone:
 
 ```py
 import jax.random as jrandom
@@ -49,7 +48,7 @@ model.apply(variables, x, train=False)  # (1, 1024, 1000)
 
 ### Continuous sequence data
 
-For sequences with continuous values, the setup looks as follows:
+For continuous-valued sequences, the setup looks as follows:
 
 ```py
 import jax.random as jrandom
