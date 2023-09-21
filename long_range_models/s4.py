@@ -97,6 +97,7 @@ class S4Block(nn.Module):
     tie_dropout: bool
 
     @nn.compact
+    # TODO: pass args and kwargs into sequence layers
     def __call__(self, x: Array, train: bool) -> Array:
         # Initialize sequence layer
         sequence_layer = self.sequence_layer(self.dim)
