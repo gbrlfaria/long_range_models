@@ -90,7 +90,6 @@ def discretize_zoh(Lambda: Array, B: Array, dt: Array) -> Tuple[Array, Array]:
         input matrix (`B`).
     """
 
-    I = jnp.ones_like(Lambda)
     Lambda_ = jnp.exp(Lambda * dt)
-    B_ = ((1 / Lambda) * (Lambda_ - I))[..., None] * B
+    B_ = ((1.0 / Lambda) * (Lambda_ - 1.0))[..., None] * B
     return Lambda_, B_
